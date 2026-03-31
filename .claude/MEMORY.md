@@ -12,7 +12,7 @@ Node.js CLI tool that routes any command through free proxies via sing-box. Sour
 - ProxyScrape: empty `country=` param returns 0 results — omit param entirely when no countries specified
 - GitHub code search API works without auth but is rate-limited
 - MuRongPIG/Proxy-Master repo has 100k+ entries, too large — was replaced with sunny9577
-- `--countries` filter: most GitHub sources don't support country param — country is verified at sing-box verification step via ipinfo.io response, not at fetch time
+- `--countries` filter: most GitHub sources don't support country param — country is verified at sing-box verification step via ipinfo.io response, not at fetch time. When `--countries` is used, pool size is set to all fetched proxies (ignoring `--pool`) since only ~1-2% match a specific country
 - `execFileSync` for curl verification blocks event loop — use async `http.request` instead
 - Source removal must be conservative: only remove if URL truly unreachable (not empty response), 10+ consecutive fails, and stale >30 days or never worked. User may only run once a week — thresholds must account for infrequent usage. Seed sources never removed. Dead sources always replaced via GitHub code search (6 queries). Discovered URLs validated (fetchFromSource, must return 5+ proxies) before adding. FALLBACK_DISCOVERY_URLS pool used as extra when sources removed. Source count should never shrink.
 - GitLab: requires auth (401 on blob search) — removed

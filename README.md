@@ -179,7 +179,7 @@ This avoids TUN mode (which requires root) and works in Termux, regular Linux, a
 ## Troubleshooting
 
 **"No proxy passed sing-box verification"**
-- Increase pool: `--pool 500`
+- When `--countries` is used, all fetched proxies are tested (pool size is ignored) since only a small percentage will match a specific country
 - Try a different protocol: `--protocol http`
 - Free proxies are unreliable — run again to get a fresh batch
 
