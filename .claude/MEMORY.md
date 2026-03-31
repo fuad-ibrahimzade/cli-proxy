@@ -12,6 +12,7 @@ Node.js CLI tool that routes any command through free proxies via sing-box. Sour
 - ProxyScrape: empty `country=` param returns 0 results — omit param entirely when no countries specified
 - GitHub code search API works without auth but is rate-limited
 - MuRongPIG/Proxy-Master repo has 100k+ entries, too large — was replaced with sunny9577
+- `--countries` filter: most GitHub sources don't support country param — country is verified at sing-box verification step via ipinfo.io response, not at fetch time
 - `execFileSync` for curl verification blocks event loop — use async `http.request` instead
 
 ## used-proxies.json format
@@ -28,4 +29,4 @@ See CLAUDE.md for full details.
 - `--use-proxy` always uses port 12080
 
 ## Workflow rule
-ALWAYS update README.md, CLAUDE.md, and MEMORY.md after every feature or edit.
+ALWAYS update README.md, .claude/CLAUDE.md, and .claude/MEMORY.md after every feature or edit.

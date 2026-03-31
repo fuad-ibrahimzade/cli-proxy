@@ -3,75 +3,75 @@
     "name": "proxyscrape/http",
     "url": "https://api.proxyscrape.com/v2/?request=displayproxies&protocol=http&timeout=5000",
     "failCount": 0,
-    "lastOk": 1774974082173
+    "lastOk": 1774975100844
   },
   {
     "name": "proxyscrape/socks5",
     "url": "https://api.proxyscrape.com/v2/?request=displayproxies&protocol=socks5&timeout=5000",
     "protocol": "socks5",
-    "failCount": 7
+    "failCount": 13
   },
   {
     "name": "TheSpeedX/http",
     "url": "https://raw.githubusercontent.com/TheSpeedX/SOCKS-List/master/http.txt",
     "failCount": 0,
-    "lastOk": 1774974082173
+    "lastOk": 1774975100844
   },
   {
     "name": "TheSpeedX/socks5",
     "url": "https://raw.githubusercontent.com/TheSpeedX/SOCKS-List/master/socks5.txt",
     "protocol": "socks5",
     "failCount": 0,
-    "lastOk": 1774974082173
+    "lastOk": 1774975100844
   },
   {
     "name": "clarketm/http",
     "url": "https://raw.githubusercontent.com/clarketm/proxy-list/master/proxy-list-raw.txt",
     "failCount": 0,
-    "lastOk": 1774974082173
+    "lastOk": 1774975100844
   },
   {
     "name": "monosans/http",
     "url": "https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/http.txt",
     "failCount": 0,
-    "lastOk": 1774974082173
+    "lastOk": 1774975100844
   },
   {
     "name": "monosans/socks5",
     "url": "https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/socks5.txt",
     "protocol": "socks5",
     "failCount": 0,
-    "lastOk": 1774974082173
+    "lastOk": 1774975100844
   },
   {
     "name": "hookzof/http",
     "url": "https://raw.githubusercontent.com/hookzof/socks5_list/master/proxy.txt",
     "failCount": 0,
-    "lastOk": 1774974082173
+    "lastOk": 1774975100844
   },
   {
     "name": "roosterkid/http",
     "url": "https://raw.githubusercontent.com/roosterkid/openproxylist/main/HTTPS_RAW.txt",
     "failCount": 0,
-    "lastOk": 1774974082173
+    "lastOk": 1774975100844
   },
   {
     "name": "proxifly/http",
     "url": "https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/protocols/http/data.txt",
     "failCount": 0,
-    "lastOk": 1774974082173
+    "lastOk": 1774975100844
   },
   {
     "name": "proxifly/socks5",
     "url": "https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/protocols/socks5/data.txt",
     "protocol": "socks5",
     "failCount": 0,
-    "lastOk": 1774974082173
+    "lastOk": 1774975100844
   },
   {
     "name": "sunny9577/http",
     "url": "https://raw.githubusercontent.com/sunny9577/proxy-scraper/master/proxies.txt",
     "failCount": 0,
-    "lastOk": 1774974082173
+    "lastOk": 1774975100844
   }
 ]

@@ -90,10 +90,14 @@ program
     const pool = fresh.slice(0, poolSize);
 
     const start = Date.now();
-    console.log(`Verifying ${pool.length} proxies via sing-box (20 at a time)...`);
+    const countryLabel = countries.length ? ` in [${countries.join(',').toUpperCase()}]` : '';
+    console.log(`Verifying ${pool.length} proxies via sing-box (20 at a time)${countryLabel}...`);
 
-    const result = await findVerifiedProxy(pool, (batch, offset) => {
-      console.log(`  Batch ${(offset / 20 + 1) | 0}: testing ${batch.length} proxies...`);
+    const result = await findVerifiedProxy(pool, {
+      countries,
+      onBatch: (batch, offset) => {
+        console.log(`  Batch ${(offset / 20 + 1) | 0}: testing ${batch.length} proxies...`);
+      },
     });
 
     if (!result) {

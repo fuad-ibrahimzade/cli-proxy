@@ -70,7 +70,11 @@ async function testOneViaBox(proxy, port) {
   return null;
 }
 
-async function findVerifiedProxy(candidates, onBatch) {
+async function findVerifiedProxy(candidates, { onBatch, countries } = {}) {
+  const allowedCountries = countries && countries.length
+    ? new Set(countries.map((c) => c.toUpperCase()))
+    : null;
+
   for (let i = 0; i < candidates.length; i += PARALLEL) {
     const batch = candidates.slice(i, i + PARALLEL);
     const ports = batch.map((_, j) => BASE_PORT + j);
@@ -84,6 +88,10 @@ async function findVerifiedProxy(candidates, onBatch) {
     let winner = null;
     for (const r of results) {
       if (!r) continue;
+      if (allowedCountries && r.country && !allowedCountries.has(r.country.toUpperCase())) {
+        r.singbox.kill('SIGTERM');
+        continue;
+      }
       if (!winner) winner = r;
       else r.singbox.kill('SIGTERM');
     }

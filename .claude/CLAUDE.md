@@ -16,6 +16,7 @@ A Node.js CLI tool that fetches free proxies from multiple sources, verifies the
 ## Architecture decisions
 - **sing-box mixed inbound** (not TUN) — TUN requires root and the old TUN config was removed in sing-box 1.12+. Mixed inbound on localhost works everywhere including Termux.
 - **No pre-test step** — direct TCP pre-tests gave false positives. All verification goes through sing-box with a real HTTP request to ipinfo.io (also captures country).
+- **Country filtering at verification** — `--countries` is enforced by checking ipinfo.io response country, not at fetch time (most sources don't support country filtering). Proxies with wrong country are rejected even if they work.
 - **--use-proxy <index>** — reuses a saved proxy by index from used-proxies.json, skips all scanning. Uses `startDirect()` in runner.js.
 - **Parallel verification** — 20 sing-box instances on ports 12080-12099 tested simultaneously per batch.
 - **Self-healing sources** — sources track failCount/lastOk. 3 consecutive failures removes non-seed sources. GitHub code search discovers new sources each run.
@@ -34,5 +35,5 @@ A Node.js CLI tool that fetches free proxies from multiple sources, verifies the
 ## IMPORTANT: After every feature or edit
 Always update these three files to stay in sync:
 1. `README.md` — user-facing docs (options table, usage examples, how it works)
-2. `CLAUDE.md` — project guide for Claude (architecture decisions, key files)
-3. `MEMORY.md` — technical gotchas and lessons learned
+2. `.claude/CLAUDE.md` — project guide for Claude (architecture decisions, key files)
+3. `.claude/MEMORY.md` — technical gotchas and lessons learned

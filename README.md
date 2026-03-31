@@ -79,7 +79,7 @@ node src/index.js --use-proxy 1 -- curl ifconfig.me
 
 1. **Fetch** — pulls proxy lists from all sources in `sources.json` in parallel (~5000+ unique proxies)
 2. **Deduplicate** — merges all lists, removes duplicates and already-used proxies
-3. **Verify** — tests 20 proxies at a time through sing-box (mixed HTTP/SOCKS5 inbound → remote proxy outbound → ipinfo.io). First working proxy wins, and its country is recorded.
+3. **Verify** — tests 20 proxies at a time through sing-box (mixed HTTP/SOCKS5 inbound → remote proxy outbound → ipinfo.io). First working proxy wins, and its country is recorded. If `--countries` is specified, only proxies whose actual country (from ipinfo.io) matches are accepted.
 4. **Run** — starts sing-box with the verified proxy on a local port, sets `HTTP_PROXY`/`HTTPS_PROXY`/`ALL_PROXY` env vars, and spawns your command
 5. **Cleanup** — kills sing-box after your command exits, marks the proxy as used with index, country, protocol, and timestamp
 
