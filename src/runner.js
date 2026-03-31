@@ -23,22 +23,31 @@ function waitForPort(port, timeoutMs = 2000) {
   });
 }
 
+// Returns { ok, country } — uses ipinfo.io to verify AND get country in one request
 function verifySingBox(port) {
   return new Promise((resolve) => {
     const req = http.request({
       hostname: '127.0.0.1',
       port,
-      path: 'http://httpbin.org/ip',
+      path: 'http://ipinfo.io/json',
       method: 'GET',
-      headers: { Host: 'httpbin.org' },
+      headers: { Host: 'ipinfo.io', Accept: 'application/json' },
       timeout: 3000,
     }, (res) => {
       let data = '';
       res.on('data', (c) => (data += c));
-      res.on('end', () => resolve(res.statusCode === 200 && data.includes('origin')));
+      res.on('end', () => {
+        if (res.statusCode !== 200) return resolve({ ok: false });
+        try {
+          const info = JSON.parse(data);
+          resolve({ ok: !!info.ip, country: info.country || null });
+        } catch {
+          resolve({ ok: false });
+        }
+      });
     });
-    req.on('error', () => resolve(false));
-    req.on('timeout', () => { req.destroy(); resolve(false); });
+    req.on('error', () => resolve({ ok: false }));
+    req.on('timeout', () => { req.destroy(); resolve({ ok: false }); });
     req.end();
   });
 }
@@ -51,8 +60,9 @@ async function testOneViaBox(proxy, port) {
 
   try {
     await waitForPort(port);
-    if (await verifySingBox(port)) {
-      return { proxy, singbox: sb, port };
+    const result = await verifySingBox(port);
+    if (result.ok) {
+      return { proxy, singbox: sb, port, country: result.country };
     }
   } catch {}
 
@@ -113,4 +123,14 @@ function runCommand(command, args, singbox, port) {
   });
 }
 
-module.exports = { findVerifiedProxy, runCommand };
+async function startDirect(proxy) {
+  const port = BASE_PORT;
+  const configPath = path.join(os.tmpdir(), `cli-proxy-sb-${port}.json`);
+  generateConfig(proxy, configPath, port);
+  const sb = startSingBox(configPath);
+  sb.stderr.on('data', () => {});
+  await waitForPort(port);
+  return { singbox: sb, port };
+}
+
+module.exports = { findVerifiedProxy, runCommand, startDirect };

@@ -5,30 +5,42 @@ function proxyKey(proxy) {
   return `${proxy.ip}:${proxy.port}`;
 }
 
-function loadUsed(filePath) {
+function loadUsedList(filePath) {
   try {
     const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-    return new Set(Array.isArray(data) ? data : []);
+    if (!Array.isArray(data)) return [];
+    // Migrate old formats: plain strings or missing index
+    return data.map((entry, i) => {
+      if (typeof entry === 'string') return { index: i + 1, address: entry };
+      if (!entry.index) entry.index = i + 1;
+      return entry;
+    });
   } catch {
-    return new Set();
+    return [];
   }
 }
 
-function saveUsed(filePath, usedSet) {
+function loadUsed(filePath) {
+  const list = loadUsedList(filePath);
+  return new Set(list.map((e) => e.address));
+}
+
+function saveUsedList(filePath, list) {
   const dir = path.dirname(filePath);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(filePath, JSON.stringify([...usedSet], null, 2));
+  fs.writeFileSync(filePath, JSON.stringify(list, null, 2));
 }
 
-function markUsed(filePath, proxy) {
-  const used = loadUsed(filePath);
-  used.add(proxyKey(proxy));
-  saveUsed(filePath, used);
+function markUsed(filePath, proxy, country) {
+  const list = loadUsedList(filePath);
+  list.push({
+    index: list.length + 1,
+    address: proxyKey(proxy),
+    protocol: proxy.protocol || 'http',
+    country: country || null,
+    usedAt: new Date().toISOString(),
+  });
+  saveUsedList(filePath, list);
 }
 
-function isUsed(filePath, proxy) {
-  const used = loadUsed(filePath);
-  return used.has(proxyKey(proxy));
-}
-
-module.exports = { proxyKey, loadUsed, saveUsed, markUsed, isUsed };
+module.exports = { proxyKey, loadUsed, loadUsedList, markUsed };

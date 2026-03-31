@@ -2,8 +2,8 @@
 
 const { Command } = require('commander');
 const { fetchProxies, initSourcesFile } = require('./proxy-fetcher');
-const { loadUsed, markUsed, proxyKey } = require('./proxy-store');
-const { findVerifiedProxy, runCommand } = require('./runner');
+const { loadUsed, loadUsedList, markUsed, proxyKey } = require('./proxy-store');
+const { findVerifiedProxy, runCommand, startDirect } = require('./runner');
 const path = require('path');
 
 const program = new Command();
@@ -16,6 +16,7 @@ program
   .option('--protocol <proto>', 'Proxy protocol: http, socks5, or all', 'all')
   .option('--sources-file <path>', 'JSON file with custom proxy sources', '')
   .option('--pool <n>', 'Max proxies to test per run', '200')
+  .option('--use-proxy <index>', 'Use a previously saved proxy by its index (skips scanning)')
   .option('--init-sources', 'Create a sources.json template for custom sources')
   .argument('[command...]', 'Command to run through the proxy')
   .allowUnknownOption(true)
@@ -32,6 +33,30 @@ program
     }
 
     const proxiesFile = path.resolve(opts.proxiesFile);
+
+    // --use-proxy: reuse a saved proxy by index, skip scanning
+    if (opts.useProxy) {
+      const idx = parseInt(opts.useProxy, 10);
+      const list = loadUsedList(proxiesFile);
+      const entry = list.find((e) => e.index === idx);
+      if (!entry) {
+        console.error(`Proxy index ${idx} not found in ${proxiesFile}`);
+        console.error(`Available: ${list.map((e) => `${e.index}: ${e.address} [${e.country || '??'}]`).join(', ') || 'none'}`);
+        process.exit(1);
+      }
+      const [ip, portStr] = entry.address.split(':');
+      const proxy = { ip, port: parseInt(portStr, 10), protocol: entry.protocol || 'http' };
+      console.log(`Reusing proxy #${idx}: ${entry.address} [${entry.country || '??'}]`);
+      try {
+        const { singbox, port } = await startDirect(proxy);
+        const [cmd, ...args] = commandArgs;
+        const exitCode = await runCommand(cmd, args, singbox, port);
+        process.exit(exitCode);
+      } catch (err) {
+        console.error(`Failed to start sing-box: ${err.message}`);
+        process.exit(1);
+      }
+    }
     const countries = opts.countries
       ? opts.countries.split(',').map((c) => c.trim().toLowerCase())
       : [];
@@ -77,8 +102,8 @@ program
     }
 
     const total = ((Date.now() - start) / 1000).toFixed(1);
-    markUsed(proxiesFile, result.proxy);
-    console.log(`Using proxy: ${result.proxy.ip}:${result.proxy.port} (found in ${total}s)`);
+    markUsed(proxiesFile, result.proxy, result.country);
+    console.log(`Using proxy: ${result.proxy.ip}:${result.proxy.port} [${result.country || '??'}] (found in ${total}s)`);
 
     const [cmd, ...args] = commandArgs;
     const exitCode = await runCommand(cmd, args, result.singbox, result.port);

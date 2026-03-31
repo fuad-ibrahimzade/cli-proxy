@@ -7,7 +7,8 @@ A Node.js CLI tool that fetches free proxies from multiple sources, verifies the
 - **Multi-source proxy fetching** — pulls from 12+ sources in parallel (ProxyScrape API, GitHub proxy lists)
 - **Self-healing sources** — dead sources are auto-removed after 3 consecutive failures; new sources are discovered from GitHub automatically
 - **sing-box verification** — proxies are tested through sing-box in batches of 20 in parallel, ensuring they actually work before running your command
-- **Proxy reuse prevention** — tracks used proxies in a JSON file so you never get the same proxy twice
+- **Proxy reuse prevention** — tracks used proxies in a JSON file with index, country, protocol, and timestamp
+- **Reuse saved proxies** — `--use-proxy <index>` to instantly reuse a known-good proxy without scanning
 - **Protocol support** — HTTP and SOCKS5 proxies, routed through sing-box's mixed inbound
 - **Custom sources** — add your own proxy list URLs to `sources.json`
 
@@ -58,6 +59,9 @@ node src/index.js --pool 500 -- curl ifconfig.me
 
 # Point to custom sources file
 node src/index.js --sources-file ./my-sources.json -- curl ifconfig.me
+
+# Reuse a previously saved proxy by index (skips all scanning)
+node src/index.js --use-proxy 1 -- curl ifconfig.me
 ```
 
 ## Options
@@ -69,14 +73,31 @@ node src/index.js --sources-file ./my-sources.json -- curl ifconfig.me
 | `--protocol <proto>` | `all` | `http`, `socks5`, or `all` |
 | `--sources-file <path>` | `sources.json` | JSON file with proxy sources |
 | `--pool <n>` | `200` | Max proxies to test per run |
+| `--use-proxy <index>` | | Reuse a saved proxy by its index (skips scanning) |
 
 ## How It Works
 
 1. **Fetch** — pulls proxy lists from all sources in `sources.json` in parallel (~5000+ unique proxies)
 2. **Deduplicate** — merges all lists, removes duplicates and already-used proxies
-3. **Verify** — tests 20 proxies at a time through sing-box (mixed HTTP/SOCKS5 inbound → remote proxy outbound → httpbin.org). First working proxy wins.
+3. **Verify** — tests 20 proxies at a time through sing-box (mixed HTTP/SOCKS5 inbound → remote proxy outbound → ipinfo.io). First working proxy wins, and its country is recorded.
 4. **Run** — starts sing-box with the verified proxy on a local port, sets `HTTP_PROXY`/`HTTPS_PROXY`/`ALL_PROXY` env vars, and spawns your command
-5. **Cleanup** — kills sing-box after your command exits, marks the proxy as used
+5. **Cleanup** — kills sing-box after your command exits, marks the proxy as used with index, country, protocol, and timestamp
+
+### used-proxies.json format
+
+```json
+[
+  {
+    "index": 1,
+    "address": "1.2.3.4:8080",
+    "protocol": "http",
+    "country": "US",
+    "usedAt": "2026-03-31T16:00:00.000Z"
+  }
+]
+```
+
+Use `--use-proxy 1` to reuse proxy #1 directly without any scanning.
 
 ## Sources
 
