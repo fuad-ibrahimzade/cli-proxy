@@ -36,7 +36,7 @@ See CLAUDE.md for full details.
 Single source of truth — no duplicate hardcoded list. INITIAL_SOURCES in proxy-fetcher.js only used to create sources.json when missing. After that, sources.json is self-managing (health tracking, discovery, removal).
 
 ## Ports
-- sing-box verification uses ports 12080-12099 (20 parallel instances)
+- sing-box verification uses ports 12080+ (default 20 parallel instances, configurable via `--parallel`)
 - Final proxy for user command reuses the winning instance's port
 - `--use-proxy` always uses port 12080
 

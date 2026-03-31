@@ -6,7 +6,7 @@ const path = require('path');
 const os = require('os');
 
 const BASE_PORT = 12080;
-const PARALLEL = 20;
+const DEFAULT_PARALLEL = 20;
 
 function waitForPort(port, timeoutMs = 2000) {
   const start = Date.now();
@@ -70,13 +70,14 @@ async function testOneViaBox(proxy, port) {
   return null;
 }
 
-async function findVerifiedProxy(candidates, { onBatch, countries } = {}) {
+async function findVerifiedProxy(candidates, { onBatch, countries, parallel } = {}) {
+  const batchSize = parallel || DEFAULT_PARALLEL;
   const allowedCountries = countries && countries.length
     ? new Set(countries.map((c) => c.toUpperCase()))
     : null;
 
-  for (let i = 0; i < candidates.length; i += PARALLEL) {
-    const batch = candidates.slice(i, i + PARALLEL);
+  for (let i = 0; i < candidates.length; i += batchSize) {
+    const batch = candidates.slice(i, i + batchSize);
     const ports = batch.map((_, j) => BASE_PORT + j);
 
     if (onBatch) onBatch(batch, i);

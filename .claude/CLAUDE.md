@@ -18,7 +18,7 @@ A Node.js CLI tool that fetches free proxies from multiple sources, verifies the
 - **No pre-test step** — direct TCP pre-tests gave false positives. All verification goes through sing-box with a real HTTP request to ipinfo.io (also captures country).
 - **Country filtering at verification** — `--countries` is enforced by checking ipinfo.io response country, not at fetch time (most sources don't support country filtering). Proxies with wrong country are rejected even if they work. When countries are specified, `--pool` is ignored and ALL fetched proxies are tested (since only a small % will match).
 - **--use-proxy <index>** — reuses a saved proxy by index from used-proxies.json, skips all scanning. Uses `startDirect()` in runner.js.
-- **Parallel verification** — 20 sing-box instances on ports 12080-12099 tested simultaneously per batch.
+- **Parallel verification** — `--parallel` controls batch size (default 20), sing-box instances on ports 12080+ tested simultaneously per batch.
 - **Self-healing sources** — sources track failCount/lastOk/totalFetched. Only truly unavailable URLs (HTTP error/timeout) increment failCount. Empty responses don't count as failures. Removal requires 10+ consecutive unavailable AND (never worked OR stale >30 days). Seed sources never removed. Dead sources always replaced via GitHub code search (6 queries). All discovered URLs validated (must return 5+ proxies) before adding. Fallback pool of known repos used when sources removed. Source count never shrinks. GitLab (requires auth), Codeberg (0 proxy repos), SearXNG (unreliable) were tested and removed — GitHub only.
 - **Env var proxy routing** — subprocess gets HTTP_PROXY/HTTPS_PROXY/ALL_PROXY pointing to local sing-box port.
 

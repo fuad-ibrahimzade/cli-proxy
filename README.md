@@ -73,6 +73,7 @@ node src/index.js --use-proxy 1 -- curl ifconfig.me
 | `--protocol <proto>` | `all` | `http`, `socks5`, or `all` |
 | `--sources-file <path>` | `sources.json` | JSON file with proxy sources |
 | `--pool <n>` | `200` | Max proxies to test per run |
+| `--parallel <n>` | `20` | Proxies to test simultaneously per batch |
 | `--use-proxy <index>` | | Reuse a saved proxy by its index (skips scanning) |
 
 ## How It Works

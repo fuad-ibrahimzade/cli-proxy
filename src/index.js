@@ -16,6 +16,7 @@ program
   .option('--protocol <proto>', 'Proxy protocol: http, socks5, or all', 'all')
   .option('--sources-file <path>', 'JSON file with custom proxy sources', '')
   .option('--pool <n>', 'Max proxies to test per run', '200')
+  .option('--parallel <n>', 'Proxies to test simultaneously per batch', '20')
   .option('--use-proxy <index>', 'Use a previously saved proxy by its index (skips scanning)')
   .argument('[command...]', 'Command to run through the proxy')
   .allowUnknownOption(true)
@@ -55,6 +56,7 @@ program
       : [];
     const protocol = opts.protocol === 'all' ? null : opts.protocol;
     const poolSize = parseInt(opts.pool, 10);
+    const parallel = parseInt(opts.parallel, 10);
 
     console.log(`Fetching ${protocol || 'all'} proxies...`);
     let proxies;
@@ -86,12 +88,13 @@ program
 
     const start = Date.now();
     const countryLabel = countries.length ? ` in [${countries.join(',').toUpperCase()}]` : '';
-    console.log(`Verifying ${pool.length} proxies via sing-box (20 at a time)${countryLabel}...`);
+    console.log(`Verifying ${pool.length} proxies via sing-box (${parallel} at a time)${countryLabel}...`);
 
     const result = await findVerifiedProxy(pool, {
       countries,
+      parallel,
       onBatch: (batch, offset) => {
-        console.log(`  Batch ${(offset / 20 + 1) | 0}: testing ${batch.length} proxies...`);
+        console.log(`  Batch ${(offset / parallel + 1) | 0}: testing ${batch.length} proxies...`);
       },
     });
 
