@@ -5,7 +5,8 @@ const path = require('path');
 
 const DEFAULT_SOURCES_FILE = path.join(__dirname, '..', 'sources.json');
 
-const SEED_SOURCES = [
+// Only used to create sources.json if it doesn't exist
+const INITIAL_SOURCES = [
   { name: 'proxyscrape/http', url: 'https://api.proxyscrape.com/v2/?request=displayproxies&protocol=http&timeout=5000' },
   { name: 'proxyscrape/socks5', url: 'https://api.proxyscrape.com/v2/?request=displayproxies&protocol=socks5&timeout=5000', protocol: 'socks5' },
   { name: 'TheSpeedX/http', url: 'https://raw.githubusercontent.com/TheSpeedX/SOCKS-List/master/http.txt' },
@@ -34,8 +35,8 @@ const GITHUB_SEARCH_QUERIES = [
   'updated proxy list filename:https.txt',
 ];
 
-// Fallback proxy list aggregator URLs
-const FALLBACK_DISCOVERY_URLS = [
+// Fallback proxy list URLs used when sources are removed
+const FALLBACK_URLS = [
   'https://raw.githubusercontent.com/jetkai/proxy-list/main/online-proxies/txt/proxies.txt',
   'https://raw.githubusercontent.com/ErcinDedeworked/proxies-txt/main/proxies.txt',
   'https://raw.githubusercontent.com/zloi-user/hideip.me/main/http.txt',
@@ -51,7 +52,9 @@ function loadSources(filePath) {
       return JSON.parse(fs.readFileSync(file, 'utf8'));
     }
   } catch {}
-  return [...SEED_SOURCES];
+  // First run — initialize sources.json from INITIAL_SOURCES
+  saveSources(INITIAL_SOURCES, file);
+  return [...INITIAL_SOURCES];
 }
 
 function saveSources(sources, filePath) {
@@ -142,26 +145,13 @@ async function discoverGitHub() {
   return discovered;
 }
 
-// GitHub is the only platform with working free proxy list discovery
-// GitLab: requires auth (401), Codeberg: 0 proxy repos, SearXNG: unreliable instances
-async function discoverAll() {
-  return discoverGitHub().catch(() => []);
-}
-
 async function fetchProxies({ countries = [], protocol, sourcesFile } = {}) {
   const filePath = sourcesFile || DEFAULT_SOURCES_FILE;
-  let sources = loadSources(filePath);
-
-  // Ensure seed sources exist
-  for (const seed of SEED_SOURCES) {
-    if (!sources.find((s) => s.url === seed.url)) {
-      sources.push(seed);
-    }
-  }
+  const sources = loadSources(filePath);
 
   console.log(`  Fetching from ${sources.length} sources...`);
 
-  // Fetch all sources in parallel, track which ones fail
+  // Fetch all sources in parallel
   const results = await Promise.all(sources.map(async (s) => {
     try {
       const proxies = await fetchFromSource(s);
@@ -169,19 +159,16 @@ async function fetchProxies({ countries = [], protocol, sourcesFile } = {}) {
         console.log(`    ${s.name}: ${proxies.length} proxies`);
         return { source: s, proxies, status: 'ok' };
       }
-      // Fetched successfully but 0 valid proxies — might be empty temporarily
       return { source: s, proxies: [], status: 'empty' };
     } catch (err) {
-      // URL is truly unreachable (HTTP error, timeout, DNS fail)
       return { source: s, proxies: [], status: 'unavailable', error: err.message };
     }
   }));
 
-  // Update source health — only count truly unavailable fetches as failures
+  // Update source health
   const now = Date.now();
   const alive = [];
   let removedCount = 0;
-  const isSeed = (s) => SEED_SOURCES.find((seed) => seed.url === s.url);
 
   for (const r of results) {
     const s = r.source;
@@ -191,18 +178,13 @@ async function fetchProxies({ countries = [], protocol, sourcesFile } = {}) {
       s.totalFetched = (s.totalFetched || 0) + r.proxies.length;
       alive.push(s);
     } else if (r.status === 'empty') {
-      // Source responded but had no proxies — don't count as failure
-      // Could be temporary (rate limit, empty list update)
       alive.push(s);
     } else {
-      // Truly unavailable — increment fail counter
       s.failCount = (s.failCount || 0) + 1;
       s.lastError = r.error;
-
-      // Only remove if: not a seed, 5+ consecutive unavailable, AND never worked OR last worked > 7 days ago
       const neverWorked = !s.lastOk;
       const stale = s.lastOk && (now - s.lastOk) > 30 * 24 * 60 * 60 * 1000;
-      if (!isSeed(s) && s.failCount >= 10 && (neverWorked || stale)) {
+      if (s.failCount >= 10 && (neverWorked || stale)) {
         removedCount++;
         console.log(`    Removing dead source: ${s.name} (unavailable ${s.failCount} times)`);
       } else {
@@ -211,21 +193,18 @@ async function fetchProxies({ countries = [], protocol, sourcesFile } = {}) {
     }
   }
 
-  // Discover new sources — try harder if sources were removed
+  // Discover new sources
   const needReplacements = removedCount > 0;
   let added = 0;
 
-  // Discover from all platforms in parallel (GitHub, GitLab, Codeberg, SearXNG)
   try {
-    const discovered = await discoverAll();
-    // Filter out already-known URLs
+    const discovered = await discoverGitHub();
     const newOnes = discovered.filter((d) => !alive.find((s) => s.url === d.url));
-    // Validate discovered sources actually have proxies (in parallel, with timeout)
     if (newOnes.length) {
       const validated = await Promise.all(newOnes.map(async (d) => {
         try {
           const proxies = await fetchFromSource(d);
-          return proxies.length >= 5 ? d : null; // At least 5 proxies to be worth adding
+          return proxies.length >= 5 ? d : null;
         } catch { return null; }
       }));
       for (const d of validated) {
@@ -234,9 +213,8 @@ async function fetchProxies({ countries = [], protocol, sourcesFile } = {}) {
     }
   } catch {}
 
-  // If sources were removed, also try fallback URLs as new sources
   if (needReplacements) {
-    for (const url of FALLBACK_DISCOVERY_URLS) {
+    for (const url of FALLBACK_URLS) {
       if (!alive.find((s) => s.url === url)) {
         const name = url.split('githubusercontent.com/')[1] || url;
         const proto = url.includes('socks5') ? 'socks5' : 'http';
@@ -248,7 +226,7 @@ async function fetchProxies({ countries = [], protocol, sourcesFile } = {}) {
 
   if (added) console.log(`    Added ${added} new sources${needReplacements ? ' (replacing removed)' : ''}`);
 
-  // Save updated sources
+  // Save updated sources.json
   saveSources(alive, filePath);
 
   // Merge and deduplicate proxies
@@ -267,4 +245,4 @@ async function fetchProxies({ countries = [], protocol, sourcesFile } = {}) {
   return all;
 }
 
-module.exports = { fetchProxies, loadSources, saveSources, SEED_SOURCES };
+module.exports = { fetchProxies, loadSources, saveSources };

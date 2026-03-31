@@ -32,6 +32,9 @@ Old formats (plain strings or missing index) are auto-migrated on load.
 ## File structure
 See CLAUDE.md for full details.
 
+## sources.json
+Single source of truth — no duplicate hardcoded list. INITIAL_SOURCES in proxy-fetcher.js only used to create sources.json when missing. After that, sources.json is self-managing (health tracking, discovery, removal).
+
 ## Ports
 - sing-box verification uses ports 12080-12099 (20 parallel instances)
 - Final proxy for user command reuses the winning instance's port

@@ -10,7 +10,7 @@ A Node.js CLI tool that fetches free proxies from multiple sources, verifies the
 - `src/proxy-tester.js` — fast parallel TCP pre-test (available but not used in main flow)
 - `src/runner.js` — starts sing-box, verifies proxy through it, runs user command
 - `src/singbox.js` — generates sing-box config (mixed inbound, http/socks outbound)
-- `sources.json` — auto-managed proxy source list with health tracking
+- `sources.json` — single source of truth for all proxy sources (auto-created from INITIAL_SOURCES on first run, self-healing/updating)
 - `used-proxies.json` — indexed list of used proxies with country, protocol, timestamp
 
 ## Architecture decisions

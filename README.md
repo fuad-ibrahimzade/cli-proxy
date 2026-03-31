@@ -10,7 +10,7 @@ A Node.js CLI tool that fetches free proxies from multiple sources, verifies the
 - **Proxy reuse prevention** — tracks used proxies in a JSON file with index, country, protocol, and timestamp
 - **Reuse saved proxies** — `--use-proxy <index>` to instantly reuse a known-good proxy without scanning
 - **Protocol support** — HTTP and SOCKS5 proxies, routed through sing-box's mixed inbound
-- **Custom sources** — add your own proxy list URLs to `sources.json`
+- **Single config file** — all sources live in `sources.json` (auto-created on first run, self-updating)
 
 ## Requirements
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const { Command } = require('commander');
-const { fetchProxies, initSourcesFile } = require('./proxy-fetcher');
+const { fetchProxies } = require('./proxy-fetcher');
 const { loadUsed, loadUsedList, markUsed, proxyKey } = require('./proxy-store');
 const { findVerifiedProxy, runCommand, startDirect } = require('./runner');
 const path = require('path');
@@ -17,16 +17,9 @@ program
   .option('--sources-file <path>', 'JSON file with custom proxy sources', '')
   .option('--pool <n>', 'Max proxies to test per run', '200')
   .option('--use-proxy <index>', 'Use a previously saved proxy by its index (skips scanning)')
-  .option('--init-sources', 'Create a sources.json template for custom sources')
   .argument('[command...]', 'Command to run through the proxy')
   .allowUnknownOption(true)
   .action(async (commandArgs, opts) => {
-    if (opts.initSources) {
-      initSourcesFile(opts.sourcesFile || undefined);
-      console.log('Created sources.json — edit it to add custom proxy sources.');
-      return;
-    }
-
     if (!commandArgs.length) {
       program.help();
       return;
