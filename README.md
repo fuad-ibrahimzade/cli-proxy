@@ -101,9 +101,11 @@ Use `--use-proxy 1` to reuse proxy #1 directly without any scanning.
 
 ## Sources
 
-### Built-in sources (12)
+### Built-in sources (16)
 
 - ProxyScrape API (HTTP + SOCKS5)
+- Geonode API (HTTP + SOCKS5)
+- spys.me (HTTP + SOCKS)
 - TheSpeedX/SOCKS-List (HTTP + SOCKS5)
 - clarketm/proxy-list
 - monosans/proxy-list (HTTP + SOCKS5)
@@ -118,11 +120,24 @@ Each source in `sources.json` tracks:
 - `failCount` — incremented on each failed fetch, reset to 0 on success
 - `lastOk` — timestamp of last successful fetch
 
-After **3 consecutive failures**, non-seed sources are automatically removed. Seed (built-in) sources are never removed.
+A source is only removed if ALL of these are true:
+- It is **not** a seed (built-in) source — seed sources are never removed
+- The URL is **truly unavailable** (HTTP error, timeout, DNS failure) — not just returning 0 proxies
+- It has been unavailable for **10+ consecutive runs**
+- It either **never worked**, or **last worked over 30 days ago**
+
+When a dead source is removed, the tool actively replaces it:
+1. **GitHub discovery** — searches GitHub code search API (6 queries)
+2. **Validation** — discovered URLs are fetched and must return 5+ valid proxies before being added
+3. **Fallback pool** — a built-in list of known GitHub proxy repos is added when sources are removed
+
+Sources that respond successfully but return 0 proxies are kept (they may be temporarily empty). The source count never shrinks — removed sources are always replaced with new ones.
 
 ### Auto-discovery
 
-On each run, the tool searches GitHub's code search API for new proxy list repositories and adds any new URLs it finds to `sources.json`.
+On each run, the tool searches GitHub's code search API (6 queries) for new proxy list repos. Discovered URLs are **validated before adding** — the tool fetches each one and only adds it if it returns at least 5 valid proxies.
+
+*Note: GitLab (requires auth), Codeberg (no proxy repos), and SearXNG (unreliable instances) were tested and found unusable for discovery.*
 
 ### Custom sources
 

@@ -18,6 +18,10 @@ const SEED_SOURCES = [
   { name: 'proxifly/http', url: 'https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/protocols/http/data.txt' },
   { name: 'proxifly/socks5', url: 'https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/protocols/socks5/data.txt', protocol: 'socks5' },
   { name: 'sunny9577/http', url: 'https://raw.githubusercontent.com/sunny9577/proxy-scraper/master/proxies.txt' },
+  { name: 'spys.me/http', url: 'https://spys.me/proxy.txt' },
+  { name: 'spys.me/socks', url: 'https://spys.me/socks.txt', protocol: 'socks5' },
+  { name: 'geonode/http', url: 'https://proxylist.geonode.com/api/proxy-list?limit=500&page=1&sort_by=lastChecked&sort_type=desc&protocols=http', format: 'geonode' },
+  { name: 'geonode/socks5', url: 'https://proxylist.geonode.com/api/proxy-list?limit=500&page=1&sort_by=lastChecked&sort_type=desc&protocols=socks5', format: 'geonode', protocol: 'socks5' },
 ];
 
 // GitHub search queries to discover new proxy lists
@@ -25,6 +29,19 @@ const GITHUB_SEARCH_QUERIES = [
   'free proxy list filename:http.txt',
   'proxy list filename:proxies.txt',
   'free proxy filename:socks5.txt',
+  'proxy list filename:socks4.txt',
+  'free proxy list filename:proxy.txt',
+  'updated proxy list filename:https.txt',
+];
+
+// Fallback proxy list aggregator URLs
+const FALLBACK_DISCOVERY_URLS = [
+  'https://raw.githubusercontent.com/jetkai/proxy-list/main/online-proxies/txt/proxies.txt',
+  'https://raw.githubusercontent.com/ErcinDedeworked/proxies-txt/main/proxies.txt',
+  'https://raw.githubusercontent.com/zloi-user/hideip.me/main/http.txt',
+  'https://raw.githubusercontent.com/zloi-user/hideip.me/main/socks5.txt',
+  'https://raw.githubusercontent.com/Zaeem20/FREE_PROXY_LIST/master/http.txt',
+  'https://raw.githubusercontent.com/Zaeem20/FREE_PROXY_LIST/master/socks5.txt',
 ];
 
 function loadSources(filePath) {
@@ -86,6 +103,21 @@ function parseText(text, defaultProtocol = 'http') {
 
 async function fetchFromSource(source) {
   const text = await httpGet(source.url);
+
+  if (source.format === 'geonode') {
+    try {
+      const data = JSON.parse(text);
+      if (!data.data || !Array.isArray(data.data)) return [];
+      return data.data
+        .map((p) => ({
+          protocol: (p.protocols && p.protocols[0]) || source.protocol || 'http',
+          ip: p.ip,
+          port: parseInt(p.port, 10),
+        }))
+        .filter((p) => p.ip && p.port);
+    } catch { return []; }
+  }
+
   return parseText(text, source.protocol || 'http');
 }
 
@@ -97,18 +129,23 @@ async function discoverGitHub() {
       const data = JSON.parse(await httpGet(url, 10000));
       if (!data.items) continue;
       for (const item of data.items) {
-        // Only raw text files from github repos
         if (!item.html_url || !item.repository) continue;
         const repo = item.repository.full_name;
         const filePath = item.path;
         const rawUrl = `https://raw.githubusercontent.com/${repo}/HEAD/${filePath}`;
-        const name = `${repo}/${filePath}`.replace(/\//g, '/');
+        const name = `github:${repo}/${filePath}`;
         const proto = filePath.includes('socks5') ? 'socks5' : 'http';
-        discovered.push({ name, url: rawUrl, protocol: proto });
+        discovered.push({ name, url: rawUrl, protocol: proto, discoveredFrom: 'github' });
       }
     } catch {}
   }
   return discovered;
+}
+
+// GitHub is the only platform with working free proxy list discovery
+// GitLab: requires auth (401), Codeberg: 0 proxy repos, SearXNG: unreliable instances
+async function discoverAll() {
+  return discoverGitHub().catch(() => []);
 }
 
 async function fetchProxies({ countries = [], protocol, sourcesFile } = {}) {
@@ -130,47 +167,86 @@ async function fetchProxies({ countries = [], protocol, sourcesFile } = {}) {
       const proxies = await fetchFromSource(s);
       if (proxies.length) {
         console.log(`    ${s.name}: ${proxies.length} proxies`);
-        return { source: s, proxies, ok: true };
+        return { source: s, proxies, status: 'ok' };
       }
-      return { source: s, proxies: [], ok: false };
-    } catch {
-      return { source: s, proxies: [], ok: false };
+      // Fetched successfully but 0 valid proxies — might be empty temporarily
+      return { source: s, proxies: [], status: 'empty' };
+    } catch (err) {
+      // URL is truly unreachable (HTTP error, timeout, DNS fail)
+      return { source: s, proxies: [], status: 'unavailable', error: err.message };
     }
   }));
 
-  // Track consecutive failures
+  // Update source health — only count truly unavailable fetches as failures
   const now = Date.now();
   const alive = [];
-  const dead = [];
+  let removedCount = 0;
+  const isSeed = (s) => SEED_SOURCES.find((seed) => seed.url === s.url);
+
   for (const r of results) {
-    if (r.ok) {
-      r.source.failCount = 0;
-      r.source.lastOk = now;
-      alive.push(r.source);
+    const s = r.source;
+    if (r.status === 'ok') {
+      s.failCount = 0;
+      s.lastOk = now;
+      s.totalFetched = (s.totalFetched || 0) + r.proxies.length;
+      alive.push(s);
+    } else if (r.status === 'empty') {
+      // Source responded but had no proxies — don't count as failure
+      // Could be temporary (rate limit, empty list update)
+      alive.push(s);
     } else {
-      r.source.failCount = (r.source.failCount || 0) + 1;
-      if (r.source.failCount >= 3 && !SEED_SOURCES.find((s) => s.url === r.source.url)) {
-        dead.push(r.source);
-        console.log(`    Removing dead source: ${r.source.name}`);
+      // Truly unavailable — increment fail counter
+      s.failCount = (s.failCount || 0) + 1;
+      s.lastError = r.error;
+
+      // Only remove if: not a seed, 5+ consecutive unavailable, AND never worked OR last worked > 7 days ago
+      const neverWorked = !s.lastOk;
+      const stale = s.lastOk && (now - s.lastOk) > 30 * 24 * 60 * 60 * 1000;
+      if (!isSeed(s) && s.failCount >= 10 && (neverWorked || stale)) {
+        removedCount++;
+        console.log(`    Removing dead source: ${s.name} (unavailable ${s.failCount} times)`);
       } else {
-        alive.push(r.source);
+        alive.push(s);
       }
     }
   }
 
-  // Discover new sources from GitHub (non-blocking, don't fail if rate-limited)
+  // Discover new sources — try harder if sources were removed
+  const needReplacements = removedCount > 0;
+  let added = 0;
+
+  // Discover from all platforms in parallel (GitHub, GitLab, Codeberg, SearXNG)
   try {
-    const discovered = await discoverGitHub();
-    let added = 0;
-    for (const d of discovered) {
-      const exists = alive.find((s) => s.url === d.url);
-      if (!exists) {
-        alive.push(d);
+    const discovered = await discoverAll();
+    // Filter out already-known URLs
+    const newOnes = discovered.filter((d) => !alive.find((s) => s.url === d.url));
+    // Validate discovered sources actually have proxies (in parallel, with timeout)
+    if (newOnes.length) {
+      const validated = await Promise.all(newOnes.map(async (d) => {
+        try {
+          const proxies = await fetchFromSource(d);
+          return proxies.length >= 5 ? d : null; // At least 5 proxies to be worth adding
+        } catch { return null; }
+      }));
+      for (const d of validated) {
+        if (d) { alive.push(d); added++; }
+      }
+    }
+  } catch {}
+
+  // If sources were removed, also try fallback URLs as new sources
+  if (needReplacements) {
+    for (const url of FALLBACK_DISCOVERY_URLS) {
+      if (!alive.find((s) => s.url === url)) {
+        const name = url.split('githubusercontent.com/')[1] || url;
+        const proto = url.includes('socks5') ? 'socks5' : 'http';
+        alive.push({ name, url, protocol: proto });
         added++;
       }
     }
-    if (added) console.log(`    Discovered ${added} new sources from GitHub`);
-  } catch {}
+  }
+
+  if (added) console.log(`    Added ${added} new sources${needReplacements ? ' (replacing removed)' : ''}`);
 
   // Save updated sources
   saveSources(alive, filePath);

@@ -14,6 +14,15 @@ Node.js CLI tool that routes any command through free proxies via sing-box. Sour
 - MuRongPIG/Proxy-Master repo has 100k+ entries, too large — was replaced with sunny9577
 - `--countries` filter: most GitHub sources don't support country param — country is verified at sing-box verification step via ipinfo.io response, not at fetch time
 - `execFileSync` for curl verification blocks event loop — use async `http.request` instead
+- Source removal must be conservative: only remove if URL truly unreachable (not empty response), 10+ consecutive fails, and stale >30 days or never worked. User may only run once a week — thresholds must account for infrequent usage. Seed sources never removed. Dead sources always replaced via GitHub code search (6 queries). Discovered URLs validated (fetchFromSource, must return 5+ proxies) before adding. FALLBACK_DISCOVERY_URLS pool used as extra when sources removed. Source count should never shrink.
+- GitLab: requires auth (401 on blob search) — removed
+- Codeberg: 0 proxy repos found — removed
+- SearXNG: public instances unreliable (empty responses, errors) — removed
+Always test a discovery source actually works before adding it to code.
+- Geonode API: JSON format, needs special parser (source.format='geonode'), 283 HTTP + 1024 SOCKS5, no auth, limit=500 per page
+- spys.me: plain text with extra metadata after ip:port (spaces), existing parser handles it fine, ~400 HTTP + 400 SOCKS
+- free-proxy-list.com: API returned empty — not added
+- proxifly API (api.proxifly.dev): returned empty — not added (GitHub raw lists work though)
 
 ## used-proxies.json format
 Each entry has: `index`, `address`, `protocol`, `country`, `usedAt`
