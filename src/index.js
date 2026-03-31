@@ -1,9 +1,8 @@
 #!/usr/bin/env node
 
 const { Command } = require('commander');
-const { fetchProxies } = require('./proxy-fetcher');
+const { fetchProxies, initSourcesFile } = require('./proxy-fetcher');
 const { loadUsed, markUsed, proxyKey } = require('./proxy-store');
-const { findWorkingProxy } = require('./proxy-tester');
 const { findVerifiedProxy, runCommand } = require('./runner');
 const path = require('path');
 
@@ -14,11 +13,19 @@ program
   .description('Route subprocess traffic through a free proxy via sing-box')
   .option('--proxies-file <path>', 'JSON file to track used proxies', 'used-proxies.json')
   .option('--countries <list>', 'Comma-separated country codes (e.g. "us,tr")')
-  .option('--protocol <proto>', 'Proxy protocol: http or socks5', 'http')
-  .option('--timeout <ms>', 'Proxy test timeout in ms', '1000')
+  .option('--protocol <proto>', 'Proxy protocol: http, socks5, or all', 'all')
+  .option('--sources-file <path>', 'JSON file with custom proxy sources', '')
+  .option('--pool <n>', 'Max proxies to test per run', '200')
+  .option('--init-sources', 'Create a sources.json template for custom sources')
   .argument('[command...]', 'Command to run through the proxy')
   .allowUnknownOption(true)
   .action(async (commandArgs, opts) => {
+    if (opts.initSources) {
+      initSourcesFile(opts.sourcesFile || undefined);
+      console.log('Created sources.json — edit it to add custom proxy sources.');
+      return;
+    }
+
     if (!commandArgs.length) {
       program.help();
       return;
@@ -28,12 +35,13 @@ program
     const countries = opts.countries
       ? opts.countries.split(',').map((c) => c.trim().toLowerCase())
       : [];
-    const timeout = parseInt(opts.timeout, 10);
+    const protocol = opts.protocol === 'all' ? null : opts.protocol;
+    const poolSize = parseInt(opts.pool, 10);
 
-    console.log(`Fetching ${opts.protocol} proxies...`);
+    console.log(`Fetching ${protocol || 'all'} proxies...`);
     let proxies;
     try {
-      proxies = await fetchProxies({ countries, protocol: opts.protocol });
+      proxies = await fetchProxies({ countries, protocol, sourcesFile: opts.sourcesFile || undefined });
     } catch (err) {
       console.error(`Failed to fetch proxies: ${err.message}`);
       process.exit(1);
@@ -52,31 +60,25 @@ program
       process.exit(1);
     }
 
+    // Shuffle and cap pool
     fresh.sort(() => Math.random() - 0.5);
+    const pool = fresh.slice(0, poolSize);
 
     const start = Date.now();
-    console.log(`Pre-testing ${fresh.length} proxies...`);
-    const candidates = await findWorkingProxy(fresh, { timeoutMs: timeout });
-    const elapsed = ((Date.now() - start) / 1000).toFixed(1);
-    console.log(`${candidates.length} candidates in ${elapsed}s. Verifying via sing-box (10 at a time)...`);
+    console.log(`Verifying ${pool.length} proxies via sing-box (20 at a time)...`);
 
-    if (!candidates.length) {
-      console.error('No working unused proxy found.');
-      process.exit(1);
-    }
-
-    const result = await findVerifiedProxy(candidates, (batch) => {
-      console.log(`  Testing batch: ${batch.map((p) => p.ip + ':' + p.port).join(', ')}`);
+    const result = await findVerifiedProxy(pool, (batch, offset) => {
+      console.log(`  Batch ${(offset / 20 + 1) | 0}: testing ${batch.length} proxies...`);
     });
 
     if (!result) {
-      console.error('No proxy passed sing-box verification.');
+      console.error('No proxy passed sing-box verification. Try again or increase --pool.');
       process.exit(1);
     }
 
     const total = ((Date.now() - start) / 1000).toFixed(1);
     markUsed(proxiesFile, result.proxy);
-    console.log(`Using proxy: ${result.proxy.ip}:${result.proxy.port} (total ${total}s)`);
+    console.log(`Using proxy: ${result.proxy.ip}:${result.proxy.port} (found in ${total}s)`);
 
     const [cmd, ...args] = commandArgs;
     const exitCode = await runCommand(cmd, args, result.singbox, result.port);

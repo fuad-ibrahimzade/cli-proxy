@@ -15,10 +15,11 @@ function generateConfig(proxy, configPath, localPort = 12080) {
     ],
     outbounds: [
       {
-        type: 'http',
+        type: proxy.protocol === 'socks5' ? 'socks' : 'http',
         tag: 'proxy-out',
         server: proxy.ip,
         server_port: proxy.port,
+        ...(proxy.protocol === 'socks5' ? { version: '5' } : {}),
       },
       { type: 'direct', tag: 'direct' },
     ],
