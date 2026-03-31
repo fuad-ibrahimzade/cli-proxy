@@ -1,0 +1,12 @@
+{
+  "name": "cli-proxy",
+  "version": "1.0.0",
+  "description": "CLI tool that routes subprocess traffic through free proxies",
+  "main": "src/index.js",
+  "bin": {
+    "cli-proxy": "src/index.js"
+  },
+  "dependencies": {
+    "commander": "^12.0.0"
+  }
+}
