@@ -78,9 +78,11 @@ program
       process.exit(1);
     }
 
-    // Shuffle and cap pool
     fresh.sort(() => Math.random() - 0.5);
-    const pool = fresh.slice(0, poolSize);
+
+    // When filtering by country, test ALL proxies since only a small % will match
+    const effectivePool = countries.length ? fresh.length : poolSize;
+    const pool = fresh.slice(0, effectivePool);
 
     const start = Date.now();
     const countryLabel = countries.length ? ` in [${countries.join(',').toUpperCase()}]` : '';
@@ -94,7 +96,7 @@ program
     });
 
     if (!result) {
-      console.error('No proxy passed sing-box verification. Try again or increase --pool.');
+      console.error(`No proxy passed sing-box verification${countryLabel}. Try different countries or protocol.`);
       process.exit(1);
     }
 
