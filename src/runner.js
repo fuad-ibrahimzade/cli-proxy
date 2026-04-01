@@ -139,7 +139,7 @@ async function startDirect(proxy) {
   const sb = startSingBox(configPath);
   sb.stderr.on('data', () => {});
   await waitForPort(port);
-  return { singbox: sb, port };
+  return { singbox: sb, port, configPath };
 }
 
 module.exports = { findVerifiedProxy, runCommand, startDirect };

@@ -3,8 +3,8 @@
     "name": "proxyscrape/http",
     "url": "https://api.proxyscrape.com/v2/?request=displayproxies&protocol=http&timeout=5000",
     "failCount": 0,
-    "lastOk": 1774979482006,
-    "totalFetched": 5342
+    "lastOk": 1775061274806,
+    "totalFetched": 11614
   },
   {
     "name": "proxyscrape/socks5",
@@ -15,97 +15,110 @@
     "name": "TheSpeedX/http",
     "url": "https://raw.githubusercontent.com/TheSpeedX/SOCKS-List/master/http.txt",
     "failCount": 0,
-    "lastOk": 1774979482006,
-    "totalFetched": 26064
+    "lastOk": 1775061274806,
+    "totalFetched": 60617,
+    "lastError": ""
   },
   {
     "name": "TheSpeedX/socks5",
     "url": "https://raw.githubusercontent.com/TheSpeedX/SOCKS-List/master/socks5.txt",
     "protocol": "socks5",
     "failCount": 0,
-    "lastOk": 1774979482006,
-    "totalFetched": 18804
+    "lastOk": 1775061274806,
+    "totalFetched": 40799,
+    "lastError": ""
   },
   {
     "name": "clarketm/http",
     "url": "https://raw.githubusercontent.com/clarketm/proxy-list/master/proxy-list-raw.txt",
     "failCount": 0,
-    "lastOk": 1774979482006,
-    "totalFetched": 4800
+    "lastOk": 1775061274806,
+    "totalFetched": 10000,
+    "lastError": ""
   },
   {
     "name": "monosans/http",
     "url": "https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/http.txt",
     "failCount": 0,
-    "lastOk": 1774979482006,
-    "totalFetched": 492
+    "lastOk": 1775061274806,
+    "totalFetched": 1132,
+    "lastError": ""
   },
   {
     "name": "monosans/socks5",
     "url": "https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/socks5.txt",
     "protocol": "socks5",
     "failCount": 0,
-    "lastOk": 1774979482006,
-    "totalFetched": 2340
+    "lastOk": 1775061274806,
+    "totalFetched": 4254,
+    "lastError": ""
   },
   {
     "name": "hookzof/http",
     "url": "https://raw.githubusercontent.com/hookzof/socks5_list/master/proxy.txt",
     "failCount": 0,
-    "lastOk": 1774979482006,
-    "totalFetched": 2252
+    "lastOk": 1775061274806,
+    "totalFetched": 3074,
+    "lastError": ""
   },
   {
     "name": "roosterkid/http",
     "url": "https://raw.githubusercontent.com/roosterkid/openproxylist/main/HTTPS_RAW.txt",
     "failCount": 0,
-    "lastOk": 1774979482006,
-    "totalFetched": 864
+    "lastOk": 1775061274806,
+    "totalFetched": 1995,
+    "lastError": ""
   },
   {
     "name": "proxifly/http",
     "url": "https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/protocols/http/data.txt",
     "failCount": 0,
-    "lastOk": 1774979482006,
-    "totalFetched": 12916
+    "lastOk": 1775061274806,
+    "totalFetched": 26826,
+    "lastError": ""
   },
   {
     "name": "proxifly/socks5",
     "url": "https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/protocols/socks5/data.txt",
     "protocol": "socks5",
     "failCount": 0,
-    "lastOk": 1774979482006,
-    "totalFetched": 18280
+    "lastOk": 1775061274806,
+    "totalFetched": 26316,
+    "lastError": ""
   },
   {
     "name": "sunny9577/http",
     "url": "https://raw.githubusercontent.com/sunny9577/proxy-scraper/master/proxies.txt",
     "failCount": 0,
-    "lastOk": 1774979482006,
-    "totalFetched": 19200
+    "lastOk": 1775061274806,
+    "totalFetched": 41495,
+    "lastError": ""
   },
   {
     "name": "spys.me/http",
     "url": "https://spys.me/proxy.txt",
     "failCount": 0,
-    "lastOk": 1774979482006,
-    "totalFetched": 4800
+    "lastOk": 1775061274806,
+    "totalFetched": 10000,
+    "lastError": ""
   },
   {
     "name": "spys.me/socks",
     "url": "https://spys.me/socks.txt",
     "protocol": "socks5",
     "failCount": 0,
-    "lastOk": 1774979482006,
-    "totalFetched": 4800
+    "lastOk": 1775061274806,
+    "totalFetched": 10000,
+    "lastError": ""
   },
   {
     "name": "geonode/http",
     "url": "https://proxylist.geonode.com/api/proxy-list?limit=500&page=1&sort_by=lastChecked&sort_type=desc&protocols=http",
     "format": "geonode",
     "failCount": 0,
-    "lastOk": 1774979482006,
-    "totalFetched": 3496
+    "lastOk": 1775061274806,
+    "totalFetched": 8311,
+    "lastError": ""
   },
   {
     "name": "geonode/socks5",
@@ -113,7 +126,8 @@
     "format": "geonode",
     "protocol": "socks5",
     "failCount": 0,
-    "lastOk": 1774979482006,
-    "totalFetched": 6000
+    "lastOk": 1775061274806,
+    "totalFetched": 12500,
+    "lastError": ""
   }
 ]

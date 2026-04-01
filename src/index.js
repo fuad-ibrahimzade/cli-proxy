@@ -42,7 +42,8 @@ program
       const proxy = { ip, port: parseInt(portStr, 10), protocol: entry.protocol || 'http' };
       console.log(`Reusing proxy #${idx}: ${entry.address} [${entry.country || '??'}]`);
       try {
-        const { singbox, port } = await startDirect(proxy);
+        const { singbox, port, configPath } = await startDirect(proxy);
+        console.log(`sing-box config: ${configPath}`);
         const [cmd, ...args] = commandArgs;
         const exitCode = await runCommand(cmd, args, singbox, port);
         process.exit(exitCode);
